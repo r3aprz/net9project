@@ -35,7 +35,6 @@ public class ChatServer {
                 PrintWriter clientWriter = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 String username = clientReader.readLine(); // viene inserito il nome letto in una variabile
-                // clients.put(username, clientWriter);  nome inviato alla socket
                 if (!clients.containsKey(username)) { // controlla che il nome sia univoco all'interno del server
                     clients.put(username, clientWriter);
                 } else {
@@ -49,11 +48,7 @@ public class ChatServer {
 
                         while ((clientMessage = clientReader.readLine()) != null) {
                             if (isAdmin(username)) {
-                                if (clientMessage.startsWith("/admin ")) {
-                                    handleAdminCommand(username, clientMessage.substring(7));
-                                } else {
-                                    handleGeneralCommands(username, clientMessage);
-                                }
+                                handleAdminCommand(username, clientMessage);
                             } else {
                                 handleGeneralCommands(username, clientMessage);
                             }
@@ -71,12 +66,6 @@ public class ChatServer {
         }
     }
 
-    /*
-    private static void broadcast(String message) {
-        for (PrintWriter writer : clients.values()) {
-            writer.println(message);
-        }
-    } */
     private static void handleGeneralCommands (String username, String clientMessage) {
         if (clientMessage.startsWith("/join #") && channelExists(clientMessage.substring(6))) {
             handleJoinCommand(username, clientMessage.substring(7));
@@ -107,11 +96,11 @@ public class ChatServer {
         } else if (clientMessage.startsWith("/promote ")) {
             handlePromoteCommand(adminUsername, clientMessage.substring(9));
         } else {
-            clients.get(adminUsername).println("Insert Valid Command");
+            handleGeneralCommands(adminUsername, clientMessage);
         }
     }
 
-    private static void handleJoinCommand(String username, String channel) {
+    private static void handleJoinCommand(String username, String channel) { // controlla se il canale esiste
         PrintWriter writer = clients.get(username);
 
         if (userChannels.containsKey(username)) {
@@ -235,32 +224,6 @@ public class ChatServer {
         // verifica se l'username corrisponde a quello di un admin
         return administrators.contains(username);
     }
-
-    /*
-    private static void handleAdminCommand(String adminUsername, String command) { // assegnare admin
-        String[] parts = command.split(" ", 2);
-
-        if (parts.length == 2) {
-            String action = parts[0].toLowerCase();
-            String targetUser = parts[1];
-
-            switch (action) {
-                case "add":
-                    administrators.add(targetUser);
-                    clients.get(adminUsername).println(targetUser + " is now an administrator.");
-                    break;
-                case "remove":
-                    administrators.remove(targetUser);
-                    clients.get(adminUsername).println(targetUser + " is no longer an administrator.");
-                    break;
-                default:
-                    clients.get(adminUsername).println("Invalid /admin command. Usage: /admin add/remove username");
-                    break;
-            }
-        } else {
-            clients.get(adminUsername).println("Invalid /admin command. Usage: /admin add/remove username");
-        }
-    } */
 
     private static void handleKickCommand (String adminUsername, String kickuser) {
         if (kickuser == adminUsername) {

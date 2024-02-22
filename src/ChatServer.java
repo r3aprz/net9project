@@ -175,7 +175,7 @@ public class ChatServer {
     private static void handleCreateChannel(String username, String channel) {
         PrintWriter writer = clients.get(username);
 
-        if (!channelExists("#" + channel)) {
+        if (!channelExists(channel)) {
             channels.add(channel);
             writer.println(GREEN + "Canale #" + channel + " è stato creato" + RESET);
         } else {

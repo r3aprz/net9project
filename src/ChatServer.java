@@ -13,9 +13,15 @@ import java.util.HashSet;
 public class ChatServer {
     public static final String RESET = "\u001B[0m";
     public static final String RED = "\u001B[31m";
+    public static final String GREEN = "\u001B[32m";
+    public static final String BLUE = "\u001B[34m";
+
+
+    private static final int PORT = 12347;
     // per tenere traccia dei client connessi
     // ogni client è identificato da un nome utente (stringa) e associato a un oggetto PrintWriter che gestisce l'invio di messaggi al client
     private static final Map<String, PrintWriter> clients = new HashMap<>();
+    private static final Set<String> channels = new HashSet<>();
     private static final Map<String, String> /* username, channel */ userChannels = new HashMap<>();
     private static final Set<String> administrators = new HashSet<>(); // contiene tutti gli username di coloro che sono admin
     private static final Map<String, String> bannedUsers = new HashMap<>(); // tiene traccia delle coppie utente-canale bannati
@@ -24,39 +30,49 @@ public class ChatServer {
     public static void main(String[] args) {
         try {
             administrators.add("kekka");
-            ServerSocket serverSocket = new ServerSocket(12347);
+            ServerSocket serverSocket = new ServerSocket(PORT);
+
+            System.out.println(GREEN + "Server started on port " + PORT + " . . ." + RESET);
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
+                Socket clientSocket = serverSocket.accept(); // accetta connessioni in arrivo
 
                 // per leggere input dal client
                 BufferedReader clientReader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 // per inviare output al client
                 PrintWriter clientWriter = new PrintWriter(clientSocket.getOutputStream(), true);
 
-                String username = clientReader.readLine(); // viene inserito il nome letto in una variabile
-                if (!clients.containsKey(username)) { // controlla che il nome sia univoco all'interno del server
-                    clients.put(username, clientWriter);
-                } else {
-                    clientWriter.println("Username already exists. Please choose a different one.");
-                    continue; // torna all'inizio
-                }
+                String username = "";
+                boolean userAlreadyExists = false;
 
+                do {
+                    username = clientReader.readLine(); // viene inserito il nome letto in una variabile
+                    userAlreadyExists = clients.containsKey(username); // controlla che il nome sia univoco all'interno del server
+
+                    if (userAlreadyExists) {
+                        clientWriter.println(RED + "Username already exists. Please choose a different one." + RESET);
+                    } else {
+                        clients.put(username, clientWriter); // aggiunge il nome utente e il writer del client all'elenco dei client connessi
+                        clientWriter.println(GREEN + "Hi " + username + ", welcome to the server!" + RESET);
+                    }
+                } while (userAlreadyExists);
+
+                String _username = username;
                 new Thread(() -> {
                     try {
                         String clientMessage;
 
                         while ((clientMessage = clientReader.readLine()) != null) {
-                            if (isAdmin(username)) {
-                                handleAdminCommand(username, clientMessage);
+                            if (isAdmin(_username)) {
+                                handleAdminCommand(_username, clientMessage);
                             } else {
-                                handleGeneralCommands(username, clientMessage);
+                                handleGeneralCommands(_username, clientMessage);
                             }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     } finally {
-                        handleLeaveCommand(username);
+                        handleLeaveCommand(_username);
                     }
                 }).start();
             }
@@ -67,7 +83,7 @@ public class ChatServer {
     }
 
     private static void handleGeneralCommands (String username, String clientMessage) {
-        if (clientMessage.startsWith("/join #") && channelExists(clientMessage.substring(6))) {
+        if (clientMessage.startsWith("/join #")) {
             handleJoinCommand(username, clientMessage.substring(7));
         } else if (clientMessage.equals("/leave")) {
             handleLeaveCommand(username);
@@ -101,26 +117,30 @@ public class ChatServer {
     }
 
     private static void handleJoinCommand(String username, String channel) { // controlla se il canale esiste
-        PrintWriter writer = clients.get(username);
-
-        if (userChannels.containsKey(username)) {
-            handleLeaveCommand(username);
-        }
-        if (bannedUsers.containsKey(username)) {
-            writer.println("you have been banned from this channel.");
+        if (!channel.contains(channel)) {
+            clients.get(username).println(RED + "this channel doesn't exists" + RESET);
         } else {
-            userChannels.put(username, "#" + channel);
+            PrintWriter writer = clients.get(username);
 
-            // Invia un messaggio di benvenuto all'utente appena entrato nel canale
+            if (userChannels.containsKey(username)) {
+                handleLeaveCommand(username);
+            }
+            if (bannedUsers.containsKey(username)) {
+                writer.println(RED + "you have been banned from this channel." + RESET);
+            } else {
+                userChannels.put(username, "#" + channel);
 
-            writer.println("Benvenuto nel canale " + userChannels.get(username));
+                // Invia un messaggio di benvenuto all'utente appena entrato nel canale
 
-            // Invia un messaggio agli utenti già presenti nel canale
-            Set<String> channelUsers = getChannelUsers(userChannels.get(username));
-            for (String user : channelUsers) {
-                if (!user.equals(username)) {
-                    writer = clients.get(user);
-                    writer.println(username + " has joined to channel.");
+                writer.println("Benvenuto nel canale " + userChannels.get(username));
+
+                // Invia un messaggio agli utenti già presenti nel canale
+                Set<String> channelUsers = getChannelUsers(userChannels.get(username));
+                for (String user : channelUsers) {
+                    if (!user.equals(username)) {
+                        writer = clients.get(user);
+                        writer.println(username + " has joined to channel.");
+                    }
                 }
             }
         }
@@ -137,11 +157,11 @@ public class ChatServer {
             for (String user : channelUsers) {
                 if (!user.equals(username)) {
                     writer = clients.get(user);
-                    writer.println(username + " has left channel.");
+                    writer.println(RED + username + " has left channel." + RESET);
                 }
             }
         } else {
-            System.out.println("use this command only if you're in a channel");
+            System.out.println(RED + "use this command only if you're in a channel" + RESET);
         }
     }
 
@@ -155,21 +175,17 @@ public class ChatServer {
     private static void handleCreateChannel(String username, String channel) {
         PrintWriter writer = clients.get(username);
 
-        if (userChannels.containsKey(username)) {
-            writer.println("Uscita dal canale ... ");
-            handleLeaveCommand(username);
-        }
-
         if (!channelExists("#" + channel)) {
-            handleJoinCommand(username, channel);
+            channels.add(channel);
+            writer.println(GREEN + "Canale #" + channel + " è stato creato" + RESET);
         } else {
             // il canale esiste già, informa l'utente
-            writer.println("Il canale di nome " + channel + " già esiste. Scegli un nome diverso.");
+            writer.println(RED + "Il canale di nome " + channel + " già esiste. Scegli un nome diverso." + RESET);
         }
     }
 
     private static boolean channelExists(String channel) {
-        return userChannels.containsValue(channel);
+        return channels.contains(channel);
     }
 
     private static void handleSendMessageToChannel(String username, String message) {
@@ -179,7 +195,7 @@ public class ChatServer {
 
             for (String user : channelUsers) {
                 PrintWriter writer = clients.get(user);
-                writer.println(username + ": " + message);
+                writer.println(BLUE + username + ": "+ RESET + message);
             }
         }
     }
@@ -211,12 +227,12 @@ public class ChatServer {
                 PrintWriter recipientWriter = clients.get(recipient);
 
                 // stampa sul destinatario il messaggio
-                recipientWriter.println("[Private from " + sender + "]: " + privateMessage);
+                recipientWriter.println(BLUE + "[Private from " + sender + "]: " + RESET + privateMessage);
             } else { // se l'utente non esiste
-                clients.get(sender).println("User " + recipient + " not found.");
+                clients.get(sender).println(RED + "User " + recipient + " not found." + RESET);
             }
         } else {
-            clients.get(sender).println("Invalid /privmsg command. Usage: /privmsg username message");
+            clients.get(sender).println(RED + "Invalid /privmsg command. Usage: /privmsg username message" + RESET);
         }
     }
 
@@ -244,14 +260,14 @@ public class ChatServer {
                     targetWriter.println(RED + "sei stato espulso dal canale da " + adminUsername + "." + RESET);
                 }
             } else {
-                clients.get(adminUsername).println(kickuser + " non è presente nel canale.");
+                clients.get(adminUsername).println(RED + kickuser + " non è presente nel canale." + RESET);
             }
         }
     }
 
     private static void handleBanCommand (String adminUsername, String banuser) {
         if (banuser == adminUsername) {
-            clients.get(adminUsername).println("non puoi bannarti da solo");
+            clients.get(adminUsername).println(RED + "non puoi bannarti da solo" + RESET);
         } else {
             if (userChannels.containsKey(banuser)) {
                 String channel = userChannels.get(banuser);
@@ -270,7 +286,7 @@ public class ChatServer {
                     targetWriter.println(RED + "sei stato bannato dal canale da " + adminUsername + "." + RESET);
                 }
             } else {
-                clients.get(adminUsername).println(banuser + " non è presente nel canale.");
+                clients.get(adminUsername).println(RED + banuser + " non è presente nel canale." + RESET);
             }
         }
     }
@@ -288,16 +304,16 @@ public class ChatServer {
 
             clients.get(unbanuser).println(RED + "non sei piu bannato dal canale " + channel + RESET);
         } else {
-            clients.get(adminUsername).println(unbanuser + " non è attualmente bannato.");
+            clients.get(adminUsername).println(RED + unbanuser + " non è attualmente bannato." + RESET);
         }
     }
 
     private static void handlePromoteCommand (String adminsUsername, String username) {
         if (isAdmin(username)) {
-            clients.get(adminsUsername).println("l'utente è già admin");
+            clients.get(adminsUsername).println(RED + "l'utente è già admin" + RESET);
         } else {
             administrators.add(username);
-            clients.get(username).println("l'admin " + adminsUsername + " ti ha promosso ad amministratore");
+            clients.get(username).println(GREEN + "l'admin " + adminsUsername + " ti ha promosso ad amministratore" + RESET);
         }
     }
 }

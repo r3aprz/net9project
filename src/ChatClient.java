@@ -51,16 +51,6 @@ public class ChatClient {
                 }
             }).start();
 
-            new Thread(() -> {
-                try {
-                    String serverMessage;
-                    while ((serverMessage = serverReader.readLine()) != null) {
-                        System.out.println(serverMessage);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }).start();
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -40,11 +40,7 @@ public class ChatClient {
                 try {
                     String userInput;
                     while ((userInput = userInputReader.readLine()) != null) {
-                        if(userInput.startsWith("/")) {
-                            serverWriter.println(userInput);
-                        } else {
-                            System.out.println("insert command");
-                        }
+                        serverWriter.println(userInput);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

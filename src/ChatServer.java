@@ -4,11 +4,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ChatServer {
     public static final String RESET = "\u001B[0m";
@@ -30,6 +32,8 @@ public class ChatServer {
     public static void main(String[] args) {
         try {
             administrators.add("kekka");
+            channels.add("#general");
+            channels.add("#default");
             ServerSocket serverSocket = new ServerSocket(PORT);
 
             System.out.println(GREEN + "Server started on port " + PORT + " . . ." + RESET);
@@ -53,6 +57,13 @@ public class ChatServer {
                         clientWriter.println(RED + "Username already exists. Please choose a different one." + RESET);
                     } else {
                         clients.put(username, clientWriter); // aggiunge il nome utente e il writer del client all'elenco dei client connessi
+
+                        LocalDateTime dataOraAttuale = LocalDateTime.now();
+                        DateTimeFormatter formatoDataOra = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                        String dataOraFormattata = dataOraAttuale.format(formatoDataOra);
+
+                        System.out.println("[LOG ~ " + dataOraFormattata + "]: " + username + " just connected to the server!");
+
                         clientWriter.println(GREEN + "Hi " + username + ", welcome to the server!" + RESET);
                     }
                 } while (userAlreadyExists);
@@ -69,10 +80,31 @@ public class ChatServer {
                                 handleGeneralCommands(_username, clientMessage);
                             }
                         }
+                    } catch (SocketException se) {
+                        // Gestisci l'eccezione specifica per la chiusura della connessione da parte del client
+                        // System.err.println("Connection reset by client: " + se.getMessage());
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        // Gestisci le altre eccezioni di IO
+                        System.err.println("Error reading from client: " + e.getMessage());
                     } finally {
-                        handleLeaveCommand(_username);
+                        if(userChannels.containsKey(_username)){
+                            handleLeaveCommand(_username);
+                        }
+                        clients.remove(_username);
+
+                        LocalDateTime dataOraAttuale = LocalDateTime.now();
+                        DateTimeFormatter formatoDataOra = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                        String dataOraFormattata = dataOraAttuale.format(formatoDataOra);
+
+                        try {
+                            clientSocket.close();
+                            clientWriter.close();
+                            clientReader.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        System.out.println("[LOG ~ " + dataOraFormattata + "]: " + _username + " has left the server!");
                     }
                 }).start();
             }

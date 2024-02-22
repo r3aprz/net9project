@@ -1,0 +1,72 @@
+\documentclass{tcc}
+\input{config.tex}
+\usepackage{subfig}
+
+\newcommand*{\captionsource}[2]{%
+  \caption[{#1}]{%
+    #1%
+    \\
+    \textbf{Fonte:} #2%
+  }%
+}
+
+\begin{document}
+\pagestyle{empty} 
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\textwidth]{imagens/logo.png} 
+\end{figure}
+
+\begin{center}
+\Large
+UNIVERSITÀ DEGLI STUDI DI NAPOLI PARTHENOPE \\
+RETI DI CALCOLATORI
+
+\end{center}
+
+\vspace{1em}
+
+\begin{center}
+    \large
+    \begin{tabular}{ll}
+        Francesco De Micco & Matricola: 0124002556 \\
+        Francesca Formisano & Matricola: 0124002481
+    \end{tabular}
+\end{center}
+
+
+\vfill
+
+
+\begin{center}
+\LARGE{RELAZIONE - IRC CHAT}
+\end{center}
+
+\vspace{2in}
+
+\begin{center}
+\large
+a.a 2023 - 2024
+\end{center}
+\afterpage{\addtocounter{page}{1}}
+
+\newpage
+
+%Sommario%
+
+\pagestyle{plain} 
+\tableofcontents
+
+\newpage
+\input{traccia}
+\newpage
+\input{desc}
+\newpage
+\input{sviluppo}
+\newpage
+\input{manuale}
+\newpage
+\input{GITHUB}
+
+\end{document}

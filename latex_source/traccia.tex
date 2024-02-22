@@ -1,0 +1,40 @@
+\section{Traccia}
+\justify
+
+Simulare una chat multiutente basata su IRC. Utilizzare un approccio client/server.
+\subsection*{Server:}
+\begin{itemize}
+    \item Permette agli utenti di connettersi
+    \item Mostra agli utenti una serie di possibili canali attivi (identificati con \#)
+    \item Rappresenta un gruppo in cui tutti gli utenti connessi possono inviare messaggi visibili a tutti coloro che sono connessi in quel canale
+    \item Permette all'utente di cambiare il canale su cui è connesso
+    \item Gestisce la collisione tra nomi utenti uguali
+    \item Permette a due utenti di parlare in privato
+\end{itemize}
+
+\subsection*{Client:}
+\begin{itemize}
+    \item Si connette ad un server specificando un nome utente, non è richiesta la password
+    \item Può richiedere la lista dei canali inviando \\
+    Comando: \texttt{/list}
+    \item Può connettersi ad un canale \\
+    Comando: \texttt{/join \#channel\_name}
+    \item Può vedere gli utenti connessi \\
+    Comando: \texttt{/users}
+    \item Può inviare messaggi \\
+    Comando: \texttt{/msg messaggio}
+    \item Può inviare un messaggio privato ad un utente \\
+    Comando: \texttt{/privmsg nickname messaggio}
+    \item Può cambiare il canale su cui è connesso in qualunque momento
+\end{itemize}
+
+\subsection*{Implementare l'utente amministratore che può:}
+\begin{itemize}
+    \item Espellere un utente dal canale \\
+    Comando: \texttt{/kick nickname}
+    \item Bannare/sbannare un utente dal canale \\
+    Comando: \texttt{/ban nickname} \\
+    Comando: \texttt{/unban nickname}
+    \item Promuovere un utente come moderatore \\
+    Comando: \texttt{/promote nickname}
+\end{itemize}

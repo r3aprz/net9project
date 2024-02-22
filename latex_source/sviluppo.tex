@@ -1,0 +1,40 @@
+\section{Dettagli implementativi del client/server}
+
+Di seguito si procede ad entrare più nello specifico per quanto riguarda l'aspetto implementativo. Anche in questo caso verrà descritto, nello specifico, ogni aspetto di ogni componente dell'applicativo.
+
+\subsection{Client}
+\subsubsection{Connessione al server}
+Il client si connette al server IRC tramite il protocollo TCP/IP utilizzando la primitiva \texttt{Socket} che richiede il nome host o l'indirizzo IP del server e la porta IRC predefinita scelta (Nel caso specifico il server si trova in locale quindi l'indirizzo sarà \texttt{127.0.0.1}). Una volta stabilita la connessione, il client invia un messaggio di identificazione al server.
+
+\subsubsection{Gestione input utente}
+Il client gestisce gli input dell'utente, consentendo agli utenti di inserire comandi IRC come /join, /msg, ecc. I comandi vengono interpretati e inviati al server IRC per l'esecuzione. Attraverso la classe \texttt{BufferReader} si accetta l'input dall'utente da terminale. 
+
+\subsubsection{Autenticazione}
+L'autenticazione del client avviene attraverso l'invio di un nickname al server IRC durante la connessione. Il server verificherà che il nome inserito sia univoco; in caso opposto trichiederà all'utente di inserirlo.
+
+\subsubsection{Comunicazione con il Server}
+Il client comunica con il server inviando e ricevendo messaggi utilizzando il protocollo IRC. Questi messaggi includono comandi per unirsi a un canale, inviare messaggi, cambiare il nickname, ecc. Viene predisposto un thread per l'ascolto dei messaggi provenienti dal server. Per inviare quanto digitato al server si utilizza la classe \texttt{PrintWriter}, per appunto scrivere sulla socket del Server. Analgomanete, sempre con la classe \texttt{BufferReader} si legge ciò che il server risponde al client.
+
+\subsubsection{Utilizzo dei thread}
+In questo caso, sono predisposti due thread:
+\begin{itemize}
+    \item uno per l'ascolto continuo dei messaggi da parte del server
+    \item uno per l'invio continuo dei messaggi scritti da terminale ed inviati al server
+\end{itemize}
+\newpage
+
+\subsection{Server}
+\subsubsection{Ascolto connessioni in entrata}
+Il server IRC ascolta le connessioni in entrata sulla porta TCP/IP specificata inizializzando la Socket; in questo caso, viene utilizzata la classe \texttt{ServerSocket} perchè appunto la socket è del server. Accetta quindi le connessioni dai client che desiderano collegarsi in un loop infinito.
+
+\subsubsection{Gestione connessioni multiple}
+Il server IRC è in grado di gestire connessioni multiple simultaneamente da parte di diversi client. Per rendere possibile ciò, nel momento in cui viene accettata la richiesta, viene startato un Thread per ogni client che sta cerando di connettersi in modo tale da non vincolare il flusso di esecuzione al server. In questo modo un flusso separato adibito al solo ascolto dei messaggi dei client viene predisposto per ognuno di essi.
+
+\subsubsection{Comunicazione con il Client}
+Il server comunica con i client in maniera analoga a come il client lo fa con il server, inviando e ricevendo messaggi IRC tramite il protocollo IRC. In particolare, Viene predisposto tramite la classe \texttt{BufferReader} un oggetto per leggere dalla socket del client, e, analogmente a come avveniva con il client, tramite la classe \texttt{PrintWriter} un oggetto per scrivere sulla socket del server, quindi per restituire al client che ne fa richiesta il risultato di un comando.
+
+\subsubsection{Autenticazione degli Utenti}
+Il server IRC autentica gli utenti durante la connessione. Ciò include la verifica del nickname. Essendo che il nickname è l'unico modo per identificare e distinguere gli utenti, il server mantiene una lista di utenti, in particolare dei loro nomi. In questo modo, in fase di accesso, il server andrà a controllare se il server inserito non è stato già preso; affermativamente, verrà connessa la connessione al server, in caso contrario verrà negata e richiesto l'inserimento del nickname da parte dell'utente
+
+\subsubsection{Esecuzione Comandi}
+Il server IRC esegue i comandi inviati dai client. Questi comandi possono includere operazioni di base, comuni a tutti gli utenti, o comandi relativi agli amministratori. Nel momento dell'invio di un comando al server, il server controllerà se l'utente che ha richiesto il comando avrà i privilegi necessari per eseuirlo. In caso affermativo eseguirà il comando altrimenti informerà l'utente che non può eseguirlo.

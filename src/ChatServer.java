@@ -117,7 +117,7 @@ public class ChatServer {
     }
 
     private static void handleJoinCommand(String username, String channel) { // controlla se il canale esiste
-        if (!channels.contains(channel)) {
+        if (!channels.contains("#" + channel)) {
             clients.get(username).println(RED + "this channel doesn't exists" + RESET);
         } else {
             PrintWriter writer = clients.get(username);
@@ -132,7 +132,7 @@ public class ChatServer {
 
                 // Invia un messaggio di benvenuto all'utente appena entrato nel canale
 
-                writer.println("Benvenuto nel canale " + userChannels.get(username));
+                writer.println("Benvenuto nel canale #" + userChannels.get(username));
 
                 // Invia un messaggio agli utenti già presenti nel canale
                 Set<String> channelUsers = getChannelUsers(userChannels.get(username));
@@ -178,11 +178,11 @@ public class ChatServer {
         PrintWriter writer = clients.get(username);
 
         if (!channelExists(channel)) {
-            channels.add(channel);
+            channels.add("#" + channel);
             writer.println(GREEN + "Canale #" + channel + " è stato creato" + RESET);
         } else {
             // il canale esiste già, informa l'utente
-            writer.println(RED + "Il canale di nome " + channel + " già esiste. Scegli un nome diverso." + RESET);
+            writer.println(RED + "Il canale di nome '" + channel + "' già esiste. Scegli un nome diverso." + RESET);
         }
     }
 
@@ -196,8 +196,13 @@ public class ChatServer {
             Set<String> channelUsers = getChannelUsers(channel);
 
             for (String user : channelUsers) {
-                PrintWriter writer = clients.get(user);
-                writer.println(BLUE + username + ": "+ RESET + message);
+                if (user != username) {
+                    PrintWriter writer = clients.get(user);
+                    writer.println(BLUE + username + ": "+ RESET + message);
+                } else {
+                    PrintWriter writer = clients.get(user);
+                    writer.println(BLUE + "me: "+ RESET + message);
+                }
             }
         }
     }

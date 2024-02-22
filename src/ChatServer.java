@@ -117,7 +117,7 @@ public class ChatServer {
     }
 
     private static void handleJoinCommand(String username, String channel) { // controlla se il canale esiste
-        if (!channel.contains(channel)) {
+        if (!channels.contains(channel)) {
             clients.get(username).println(RED + "this channel doesn't exists" + RESET);
         } else {
             PrintWriter writer = clients.get(username);
@@ -128,7 +128,7 @@ public class ChatServer {
             if (bannedUsers.containsKey(username)) {
                 writer.println(RED + "you have been banned from this channel." + RESET);
             } else {
-                userChannels.put(username, "#" + channel);
+                userChannels.put(username, channel);
 
                 // Invia un messaggio di benvenuto all'utente appena entrato nel canale
 
@@ -147,6 +147,8 @@ public class ChatServer {
     }
 
     private static void handleLeaveCommand(String username) {
+        PrintWriter userwriter = clients.get(username);
+
         if (userChannels.containsKey(username)) {
             String channel = userChannels.get(username);
             userChannels.remove(username);
@@ -161,7 +163,7 @@ public class ChatServer {
                 }
             }
         } else {
-            System.out.println(RED + "use this command only if you're in a channel" + RESET);
+            userwriter.println(RED + "use this command only if you're in a channel" + RESET);
         }
     }
 
@@ -201,17 +203,23 @@ public class ChatServer {
     }
 
     private static Set<String> handleShowChannelsList () {
-        return userChannels.entrySet().stream()
-                .map(Map.Entry::getValue)
-                .collect(java.util.stream.Collectors.toSet());
+        return channels;
     }
 
     private static Set<String> handleShowUsersList (String username) {
         String c = userChannels.get(username);
-        return userChannels.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(c))
-                .map(Map.Entry::getKey)
-                .collect(java.util.stream.Collectors.toSet());
+        if (c != null) {
+            return userChannels.entrySet().stream()
+                    .filter(entry -> entry.getValue().equals(c))
+                    .map(Map.Entry::getKey)
+                    .collect(java.util.stream.Collectors.toSet());
+        } else {
+            String errorString = "you're not in a channel !";
+            Set<String> charSet = new HashSet<>();
+            charSet.add(errorString);
+
+            return charSet;
+        }
     }
 
     private static void handlePrivateMessage (String sender, String message) {
@@ -247,7 +255,7 @@ public class ChatServer {
         } else {
             if (userChannels.containsKey(kickuser)) {
                 String channel = userChannels.get(kickuser);
-                userChannels.remove(kickuser);
+                handleLeaveCommand(kickuser);
 
                 Set<String> channelUsers = getChannelUsers(channel);
                 for (String user : channelUsers) {
@@ -271,7 +279,7 @@ public class ChatServer {
         } else {
             if (userChannels.containsKey(banuser)) {
                 String channel = userChannels.get(banuser);
-                userChannels.remove(banuser);
+                handleLeaveCommand(banuser);
 
                 bannedUsers.put(banuser, channel);
 

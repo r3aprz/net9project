@@ -97,9 +97,17 @@ public class ChatServer {
                         String dataOraFormattata = dataOraAttuale.format(formatoDataOra);
 
                         try {
-                            clientSocket.close();
-                            clientWriter.close();
-                            clientReader.close();
+                            if (clientSocket != null) {
+                                clientSocket.close();
+                            }
+
+                            if (clientReader != null) {
+                                clientReader.close();
+                            }
+
+                            if (clientWriter != null) {
+                                clientWriter.close();
+                            }
                         } catch (IOException e) {
                             throw new RuntimeException(e);
                         }
